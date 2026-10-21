@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家庭預算計算器 Family Budget Planner</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f8fafc;
+    }
+  </style>
+</head>
+<body class="text-slate-800 min-h-screen pb-12">
+
+  <!-- Header Section -->
+  <header class="bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md">
+    <div class="max-w-6xl mx-auto px-4 py-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-3">
+            <i class="fa-solid fa-house-chimney-window"></i> 家庭預算計算器
+          </h1>
+          <p class="text-teal-100 text-sm mt-1">清晰規劃夫妻收入、各項日常開支與儲蓄目標</p>
+        </div>
+        
+        <!-- Plan Selector Bar -->
+        <div class="bg-white/10 backdrop-blur-md p-2 rounded-xl flex items-center gap-2 border border-white/20">
+          <i class="fa-solid fa-folder-open text-teal-200 ml-2"></i>
+          <select id="planSelect" onchange="switchPlan(this.value)" class="bg-transparent text-white font-medium focus:outline-none cursor-pointer pr-4">
+            <!-- Dynamic Options -->
+          </select>
+          <button onclick="openNewPlanModal()" title="新增預算計劃" class="bg-white text-teal-700 hover:bg-teal-50 px-3 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-plus"></i> 新增計劃
+          </button>
+          <button onclick="duplicateCurrentPlan()" title="複製當前計劃" class="bg-teal-700/60 hover:bg-teal-700 text-white px-2.5 py-1.5 rounded-lg text-sm transition">
+            <i class="fa-regular fa-copy"></i>
+          </button>
+          <button onclick="deleteCurrentPlan()" title="刪除當前計劃" class="bg-rose-500/80 hover:bg-rose-600 text-white px-2.5 py-1.5 rounded-lg text-sm transition">
+            <i class="fa-regular fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-6xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Column: Inputs (Income & Expenses) -->
+    <div class="lg:col-span-7 space-y-6">
+
+      <!-- Plan Name Header Banner -->
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-8 bg-teal-500 rounded-full"></span>
+          <div>
+            <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">目前計劃</span>
+            <h2 id="currentPlanTitle" class="text-xl font-bold text-slate-800">預設預算案</h2>
+          </div>
+        </div>
+        <button onclick="renameCurrentPlan()" class="text-slate-400 hover:text-teal-600 text-sm flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-slate-50 transition">
+          <i class="fa-regular fa-pen-to-square"></i> 重命名
+        </button>
+      </div>
+
+      <!-- 1. Monthly Income Section -->
+      <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-sack-dollar text-emerald-500"></i> 每月總收入
+          </h3>
+          <span id="incomeTotalBadge" class="text-sm font-semibold px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full">
+            $0
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Husband Income -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <label class="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
+              <i class="fa-solid fa-user-tie text-blue-500"></i> 丈夫月收入 (HKD)
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-2.5 text-slate-400 font-medium">$</span>
+              <input type="number" id="husbandIncome" oninput="updateCalculations()" placeholder="0" min="0" step="100" class="w-full pl-7 pr-3 py-2 bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 font-semibold text-slate-700">
+            </div>
+          </div>
+
+          <!-- Wife Income -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <label class="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
+              <i class="fa-solid fa-user-dress text-pink-500"></i> 妻子月收入 (HKD)
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-2.5 text-slate-400 font-medium">$</span>
+              <input type="number" id="wifeIncome" oninput="updateCalculations()" placeholder="0" min="0" step="100" class="w-full pl-7 pr-3 py-2 bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 font-semibold text-slate-700">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Expenses Section -->
+      <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div>
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-receipt text-rose-500"></i> 開支項目與預算
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">分類輸入各項預計開支費用</p>
+          </div>
+          <button onclick="addNewCategoryModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1 self-start sm:self-auto">
+            <i class="fa-solid fa-folder-plus"></i> 新增開支類別
+          </button>
+        </div>
+
+        <!-- Categories Accordion Container -->
+        <div id="expenseCategoriesContainer" class="space-y-4">
+          <!-- Dynamic Expense Categories & Items -->
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Right Column: Summary Dashboard & Charts -->
+    <div class="lg:col-span-5 space-y-6">
+
+      <!-- Summary Cards -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4 sticky top-6">
+        <h3 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie text-teal-600"></i> 財務摘要儀表板
+        </h3>
+
+        <!-- Big Stat: Remaining Surplus/Deficit -->
+        <div id="remainingBox" class="p-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md transition-all">
+          <span class="text-xs font-medium text-emerald-100 block mb-1" id="remainingLabel">每月淨剩餘金額 (盈餘)</span>
+          <div class="text-3xl font-extrabold flex items-baseline gap-1">
+            <span class="text-xl">$</span>
+            <span id="remainingAmount">0</span>
+          </div>
+          <p class="text-xs text-emerald-100/80 mt-2 flex items-center gap-1" id="remainingSubtext">
+            <i class="fa-solid fa-circle-check"></i> 收支平衡，運作良好
+          </p>
+        </div>
+
+        <!-- Stat Row: Income vs Expenses -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+            <span class="text-xs text-slate-400 block font-medium">總家庭收入</span>
+            <span class="text-lg font-bold text-emerald-600" id="dashTotalIncome">$0</span>
+          </div>
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+            <span class="text-xs text-slate-400 block font-medium">總預算開支</span>
+            <span class="text-lg font-bold text-rose-500" id="dashTotalExpenses">$0</span>
+          </div>
+        </div>
+
+        <!-- Expense Ratio Progress Bar -->
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1.5">
+            <span class="text-slate-500">開支佔收入比例</span>
+            <span id="expenseRatioText" class="text-teal-600">0%</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+            <div id="expenseProgressBar" class="bg-teal-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Chart Area -->
+        <div class="pt-4 border-t border-slate-100">
+          <span class="text-xs font-semibold text-slate-500 block mb-3">開支分類佔比圖</span>
+          <div class="relative h-52 flex items-center justify-center">
+            <canvas id="expenseChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Savings Insight Card -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 text-xs text-slate-600 space-y-1.5">
+          <div class="font-bold text-slate-700 flex items-center gap-1.5">
+            <i class="fa-solid fa-lightbulb text-amber-500"></i> 理財小提示
+          </div>
+          <p id="savingsInsightText">請先輸入夫妻月收入與相關開支項目。</p>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal 1: New Plan Modal -->
+  <div id="newPlanModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100">
+      <h3 class="text-lg font-bold text-slate-800 mb-4">建立全新預算計劃</h3>
+      <label class="block text-xs font-semibold text-slate-500 mb-1">計劃名稱</label>
+      <input type="text" id="newPlanNameInput" placeholder="例如：2027家庭旅遊預算 / 買樓後開支" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 mb-4 text-sm">
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('newPlanModal')" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg transition">取消</button>
+        <button onclick="confirmCreateNewPlan()" class="px-4 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition">建立計劃</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Add Category Modal -->
+  <div id="newCategoryModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100">
+      <h3 class="text-lg font-bold text-slate-800 mb-4">新增開支分類</h3>
+      <label class="block text-xs font-semibold text-slate-500 mb-1">分類名稱</label>
+      <input type="text" id="newCategoryNameInput" placeholder="例如：寵物開支 / 娛樂休閒" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 mb-4 text-sm">
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('newCategoryModal')" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg transition">取消</button>
+        <button onclick="confirmAddCategory()" class="px-4 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition">新增分類</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // LocalStorage Key
+    const STORAGE_KEY = 'family_budget_app_data_v1';
+
+    // Default Starting Data Template
+    const defaultData = {
+      activePlanId: 'plan_default',
+      plans: [
+        {
+          id: 'plan_default',
+          name: '日常家庭預算',
+          husbandIncome: 35000,
+          wifeIncome: 28000,
+          categories: [
+            {
+              id: 'cat_housing',
+              name: '居住及房屋',
+              items: [
+                { id: 'item_1', name: '住宅按揭 / 租金', amount: 18000 },
+                { id: 'item_2', name: '屋苑管理費', amount: 1500 },
+                { id: 'item_3', name: '水電煤及網上寬頻', amount: 1200 }
+              ]
+            },
+            {
+              id: 'cat_living',
+              name: '日常生活費用',
+              items: [
+                { id: 'item_4', name: '買餸及日常用品', amount: 6000 },
+                { id: 'item_5', name: '夫妻外出用餐', amount: 4000 },
+                { id: 'item_6', name: '交通車費 (巴士/港鐵)', amount: 2000 }
+              ]
+            },
+            {
+              id: 'cat_family',
+              name: '子女與家庭育兒',
+              items: [
+                { id: 'item_7', name: '外傭薪金及膳食津貼', amount: 5200 },
+                { id: 'item_8', name: '子女學費及興趣班', amount: 4500 }
+              ]
+            },
+            {
+              id: 'cat_savings',
+              name: '保險、儲蓄及投資',
+              items: [
+                { id: 'item_9', name: '家庭醫療及人壽保險', amount: 3500 },
+                { id: 'item_10', name: '每月應急儲蓄基金', amount: 8000 }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    // App State Variables
+    let appData = loadData();
+    let chartInstance = null;
+
+    // Palette for Chart
+    const colorPalette = [
+      '#0d9488', '#0284c7', '#6366f1', '#8b5cf6', 
+      '#ec4899', '#f43f5e', '#f59e0b', '#10b981'
+    ];
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      renderPlanSelector();
+      loadActivePlanToUI();
+      initChart();
+      updateCalculations();
+    });
+
+    // --- LocalStorage Operations ---
+    function loadData() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error("Failed to parse storage data", e);
+        }
+      }
+      return JSON.parse(JSON.stringify(defaultData));
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    function getCurrentPlan() {
+      let plan = appData.plans.find(p => p.id === appData.activePlanId);
+      if (!plan && appData.plans.length > 0) {
+        plan = appData.plans[0];
+        appData.activePlanId = plan.id;
+      }
+      return plan;
+    }
+
+    // --- UI Rendering ---
+    function renderPlanSelector() {
+      const select = document.getElementById('planSelect');
+      select.innerHTML = '';
+      appData.plans.forEach(plan => {
+        const opt = document.createElement('option');
+        opt.value = plan.id;
+        opt.textContent = plan.name;
+        opt.className = 'text-slate-800';
+        if (plan.id === appData.activePlanId) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function loadActivePlanToUI() {
+      const plan = getCurrentPlan();
+      if (!plan) return;
+
+      document.getElementById('currentPlanTitle').textContent = plan.name;
+      document.getElementById('husbandIncome').value = plan.husbandIncome || 0;
+      document.getElementById('wifeIncome').value = plan.wifeIncome || 0;
+
+      renderExpenseCategories(plan.categories);
+    }
+
+    function renderExpenseCategories(categories) {
+      const container = document.getElementById('expenseCategoriesContainer');
+      container.innerHTML = '';
+
+      categories.forEach((cat, catIdx) => {
+        const catTotal = cat.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+        const catEl = document.createElement('div');
+        catEl.className = 'bg-slate-50 border border-slate-200/80 rounded-xl overflow-hidden transition-all';
+        catEl.innerHTML = `
+          <div class="p-3.5 bg-slate-100/70 border-b border-slate-200/60 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-sm text-slate-700">${escapeHtml(cat.name)}</span>
+              <span class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+                $${catTotal.toLocaleString()}
+              </span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="addNewItem('${cat.id}')" class="text-xs text-teal-600 hover:text-teal-700 font-medium px-2 py-1 rounded hover:bg-teal-50 transition">
+                <i class="fa-solid fa-plus"></i> 加細項
+              </button>
+              <button onclick="deleteCategory('${cat.id}')" class="text-slate-400 hover:text-rose-500 p-1 text-xs transition" title="刪除分類">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3 space-y-2">
+            ${cat.items.map(item => `
+              <div class="flex items-center gap-2">
+                <input type="text" value="${escapeHtml(item.name)}" 
+                  onchange="updateItemName('${cat.id}', '${item.id}', this.value)"
+                  placeholder="開支項目名稱"
+                  class="flex-1 text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 text-slate-700">
+                
+                <div class="relative w-28 sm:w-36">
+                  <span class="absolute left-2.5 top-1.5 text-xs text-slate-400">$</span>
+                  <input type="number" value="${item.amount || ''}" 
+                    oninput="updateItemAmount('${cat.id}', '${item.id}', this.value)"
+                    placeholder="0" min="0"
+                    class="w-full text-xs pl-6 pr-2 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 font-semibold text-slate-700">
+                </div>
+
+                <button onclick="deleteItem('${cat.id}', '${item.id}')" class="text-slate-300 hover:text-rose-500 p-1 text-xs transition">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            `).join('')}
+            ${cat.items.length === 0 ? '<p class="text-xs text-slate-400 italic py-1 text-center">點擊上方「+ 加細項」新增費用項目</p>' : ''}
+          </div>
+        `;
+        container.appendChild(catEl);
+      });
+    }
+
+    // --- Calculation & Data Updates ---
+    function updateCalculations() {
+      const plan = getCurrentPlan();
+      if (!plan) return;
+
+      // Update Income state from input
+      const husbandIncome = Number(document.getElementById('husbandIncome').value) || 0;
+      const wifeIncome = Number(document.getElementById('wifeIncome').value) || 0;
+      plan.husbandIncome = husbandIncome;
+      plan.wifeIncome = wifeIncome;
+
+      const totalIncome = husbandIncome + wifeIncome;
+
+      // Calculate Total Expenses & Expenses per Category
+      let totalExpenses = 0;
+      const categoryTotals = [];
+
+      plan.categories.forEach(cat => {
+        const catSum = cat.items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+        totalExpenses += catSum;
+        categoryTotals.push({ name: cat.name, amount: catSum });
+      });
+
+      const remaining = totalIncome - totalExpenses;
+
+      // Update Top UI
+      document.getElementById('incomeTotalBadge').textContent = `$${totalIncome.toLocaleString()}`;
+      document.getElementById('dashTotalIncome').textContent = `$${totalIncome.toLocaleString()}`;
+      document.getElementById('dashTotalExpenses').textContent = `$${totalExpenses.toLocaleString()}`;
+
+      // Update Remaining Box (Surplus / Deficit styling)
+      const remainingBox = document.getElementById('remainingBox');
+      const remainingLabel = document.getElementById('remainingLabel');
+      const remainingAmount = document.getElementById('remainingAmount');
+      const remainingSubtext = document.getElementById('remainingSubtext');
+
+      remainingAmount.textContent = Math.abs(remaining).toLocaleString();
+
+      if (remaining >= 0) {
+        remainingBox.className = "p-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md transition-all";
+        remainingLabel.textContent = "每月淨剩餘金額 (盈餘)";
+        remainingSubtext.innerHTML = `<i class="fa-solid fa-circle-check"></i> 財務穩健！預計每年可儲蓄 $${(remaining * 12).toLocaleString()}`;
+      } else {
+        remainingBox.className = "p-5 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-md transition-all";
+        remainingLabel.textContent = "每月超支金額 (赤字)";
+        remainingSubtext.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> 支出已超過家庭總收入，建議檢視非必要開支`;
+      }
+
+      // Progress Bar
+      const ratio = totalIncome > 0 ? Math.min(Math.round((totalExpenses / totalIncome) * 100), 100) : 0;
+      const realRatio = totalIncome > 0 ? Math.round((totalExpenses / totalIncome) * 100) : 0;
+      document.getElementById('expenseRatioText').textContent = `${realRatio}%`;
+      const progressBar = document.getElementById('expenseProgressBar');
+      progressBar.style.width = `${ratio}%`;
+      progressBar.className = realRatio > 100 ? "bg-rose-500 h-full rounded-full transition-all duration-300" : "bg-teal-500 h-full rounded-full transition-all duration-300";
+
+      // Insights
+      updateInsightText(totalIncome, totalExpenses, remaining);
+
+      // Refresh Chart
+      updateChart(categoryTotals);
+
+      // Save persistent state
+      saveData();
+    }
+
+    function updateInsightText(income, expenses, remaining) {
+      const insightEl = document.getElementById('savingsInsightText');
+      if (income === 0 && expenses === 0) {
+        insightEl.textContent = "請輸入夫妻月收入與相關開支項目。";
+        return;
+      }
+      if (income === 0) {
+        insightEl.textContent = "請輸入家庭月收入以計算儲蓄比例。";
+        return;
+      }
+
+      const savingsRate = Math.round((remaining / income) * 100);
+
+      if (remaining < 0) {
+        insightEl.innerHTML = `當前開支佔收入 <strong class="text-rose-600">${Math.round((expenses/income)*100)}%</strong>，處於超支狀態。建議重點審視「居住」或「日常飲食」類別中的彈性開支。`;
+      } else if (savingsRate >= 30) {
+        insightEl.innerHTML = `太棒了！你的儲蓄率達到 <strong class="text-emerald-600">${savingsRate}%</strong>，屬於非常健康且優秀的理財架構！`;
+      } else if (savingsRate >= 15) {
+        insightEl.innerHTML = `目前家庭儲蓄率為 <strong class="text-teal-600">${savingsRate}%</strong>，達到一般家庭健康理財標準 (15%-20%)。`;
+      } else {
+        insightEl.innerHTML = `目前家庭儲蓄率為 <strong class="text-amber-600">${savingsRate}%</strong>，略低於建議的 20% 目標。可嘗試減少 5%-10% 的娛樂或外賣支出。`;
+      }
+    }
+
+    // --- Chart.js Integration ---
+    function initChart() {
+      const ctx = document.getElementById('expenseChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            backgroundColor: colorPalette,
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                font: { size: 11 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.raw || 0;
+                  return ` $${val.toLocaleString()}`;
+                }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    function updateChart(categoryTotals) {
+      if (!chartInstance) return;
+
+      const activeCategories = categoryTotals.filter(c => c.amount > 0);
+
+      chartInstance.data.labels = activeCategories.map(c => c.name);
+      chartInstance.data.datasets[0].data = activeCategories.map(c => c.amount);
+      chartInstance.update();
+    }
+
+    // --- Plan Management Actions ---
+    function switchPlan(planId) {
+      appData.activePlanId = planId;
+      loadActivePlanToUI();
+      updateCalculations();
+    }
+
+    function openNewPlanModal() {
+      document.getElementById('newPlanNameInput').value = '';
+      document.getElementById('newPlanModal').classList.remove('hidden');
+      document.getElementById('newPlanModal').classList.add('flex');
+    }
+
+    function confirmCreateNewPlan() {
+      const nameInput = document.getElementById('newPlanNameInput').value.trim();
+      const planName = nameInput || `新預算計劃 ${appData.plans.length + 1}`;
+
+      const newPlan = {
+        id: 'plan_' + Date.now(),
+        name: planName,
+        husbandIncome: 0,
+        wifeIncome: 0,
+        categories: JSON.parse(JSON.stringify(defaultData.plans[0].categories)) // clone categories structure
+      };
+
+      appData.plans.push(newPlan);
+      appData.activePlanId = newPlan.id;
+
+      closeModal('newPlanModal');
+      renderPlanSelector();
+      loadActivePlanToUI();
+      updateCalculations();
+    }
+
+    function duplicateCurrentPlan() {
+      const current = getCurrentPlan();
+      if (!current) return;
+
+      const duplicated = JSON.parse(JSON.stringify(current));
+      duplicated.id = 'plan_' + Date.now();
+      duplicated.name = current.name + ' (副本)';
+
+      appData.plans.push(duplicated);
+      appData.activePlanId = duplicated.id;
+
+      renderPlanSelector();
+      loadActivePlanToUI();
+      updateCalculations();
+    }
+
+    function renameCurrentPlan() {
+      const current = getCurrentPlan();
+      if (!current) return;
+
+      const newName = prompt('請輸入新的計劃名稱：', current.name);
+      if (newName && newName.trim() !== '') {
+        current.name = newName.trim();
+        renderPlanSelector();
+        document.getElementById('currentPlanTitle').textContent = current.name;
+        saveData();
+      }
+    }
+
+    function deleteCurrentPlan() {
+      if (appData.plans.length <= 1) {
+        alert('最少需要保留一個預算計劃，無法刪除！');
+        return;
+      }
+
+      if (confirm(`確定要刪除「${getCurrentPlan().name}」嗎？此操作無法復原。`)) {
+        appData.plans = appData.plans.filter(p => p.id !== appData.activePlanId);
+        appData.activePlanId = appData.plans[0].id;
+
+        renderPlanSelector();
+        loadActivePlanToUI();
+        updateCalculations();
+      }
+    }
+
+    // --- Category & Item Dynamic CRUD Actions ---
+    function addNewCategoryModal() {
+      document.getElementById('newCategoryNameInput').value = '';
+      document.getElementById('newCategoryModal').classList.remove('hidden');
+      document.getElementById('newCategoryModal').classList.add('flex');
+    }
+
+    function confirmAddCategory() {
+      const catName = document.getElementById('newCategoryNameInput').value.trim();
+      if (!catName) return;
+
+      const plan = getCurrentPlan();
+      plan.categories.push({
+        id: 'cat_' + Date.now(),
+        name: catName,
+        items: []
+      });
+
+      closeModal('newCategoryModal');
+      renderExpenseCategories(plan.categories);
+      updateCalculations();
+    }
+
+    function deleteCategory(catId) {
+      const plan = getCurrentPlan();
+      if (confirm('確定要刪除整個開支類別及其所有細項嗎？')) {
+        plan.categories = plan.categories.filter(c => c.id !== catId);
+        renderExpenseCategories(plan.categories);
+        updateCalculations();
+      }
+    }
+
+    function addNewItem(catId) {
+      const plan = getCurrentPlan();
+      const cat = plan.categories.find(c => c.id === catId);
+      if (cat) {
+        cat.items.push({
+          id: 'item_' + Date.now(),
+          name: '',
+          amount: 0
+        });
+        renderExpenseCategories(plan.categories);
+        updateCalculations();
+      }
+    }
+
+    function updateItemName(catId, itemId, val) {
+      const plan = getCurrentPlan();
+      const cat = plan.categories.find(c => c.id === catId);
+      if (cat) {
+        const item = cat.items.find(i => i.id === itemId);
+        if (item) item.name = val;
+      }
+      saveData();
+    }
+
+    function updateItemAmount(catId, itemId, val) {
+      const plan = getCurrentPlan();
+      const cat = plan.categories.find(c => c.id === catId);
+      if (cat) {
+        const item = cat.items.find(i => i.id === itemId);
+        if (item) item.amount = Number(val) || 0;
+      }
+      updateCalculations();
+    }
+
+    function deleteItem(catId, itemId) {
+      const plan = getCurrentPlan();
+      const cat = plan.categories.find(c => c.id === catId);
+      if (cat) {
+        cat.items = cat.items.filter(i => i.id !== itemId);
+        renderExpenseCategories(plan.categories);
+        updateCalculations();
+      }
+    }
+
+    // Modal Helpers
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
